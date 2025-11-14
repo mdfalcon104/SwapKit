@@ -115,6 +115,25 @@ async function getSuggestedTxFee(chain: Chain) {
   }
 }
 
+async function getBlockHeight(chain: Chain) {
+  try {
+    const response = await RequestClient.get<{
+      data: { best_block_height: number };
+      context: { code: number };
+    }>(`${baseUrl(chain)}/stats`);
+
+    if (response.context.code !== 200) {
+      throw new SwapKitError("toolbox_utxo_api_error", { error: "Failed to fetch block height" });
+    }
+
+    return response.data.best_block_height;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Failed to fetch block height: ${errorMessage}`);
+    return 0;
+  }
+}
+
 async function blockchairRequest<T>(url: string, apiKey?: string): Promise<T> {
   const response = await RequestClient.get<BlockchairResponse<T>>(
     `${url}${apiKey ? `${url.includes("?") ? "&" : "?"}key=${apiKey}` : ""}`,
@@ -302,6 +321,7 @@ export function getUtxoApi(chain: UTXOChain) {
     broadcastTx: (txHash: string) => broadcastUTXOTx({ chain, txHash }),
     getAddressData: (address: string) => getAddressData({ address, apiKey, chain }),
     getBalance: (address: string) => getUnconfirmedBalance({ address, apiKey, chain }),
+    getBlockHeight: () => getBlockHeight(chain),
     getRawTx: (txHash: string) => getRawTx({ apiKey, chain, txHash }),
     getSuggestedTxFee: () => getSuggestedTxFee(chain),
     getUtxos: (params: { address: string; fetchTxHex?: boolean; targetValue?: number }) =>

@@ -29,13 +29,22 @@ export const getLedgerTransport = async (): Promise<Transport> => {
     throw new SwapKitError("wallet_ledger_device_not_found");
   }
 
-  device.opened || (await device.open());
+  // Close device first if already opened to reset state
+  if (device.opened) {
+    try {
+      await device.close();
+    } catch {
+      // Ignore close errors
+    }
+  }
+
+  await device.open();
   if (device.configuration === null) await device.selectConfiguration(1);
 
   try {
     await device.reset();
   } catch {
-    // reset fails on devices that are already open
+    // reset fails on some devices, ignore
   }
 
   const configuration = device.configuration ?? device.configurations?.[0];

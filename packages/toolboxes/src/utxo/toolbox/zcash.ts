@@ -145,10 +145,16 @@ async function createTransaction(buildTxParams: UTXOBuildTxParams) {
 
   const psbt = bitgo.createPsbtForNetwork({ network: getZcashNetwork() }, { version: 455 }) as ZcashPsbt;
 
-  //   const NU6 = 0xc8e71055;
-  const NU5 = 0xc2d6d0b4;
-  //   const branchId = tipHeight >= 2726400 ? NU6 : tipHeight >= 1687104 ? NU5 : NU5;
-  const branchId = NU5;
+  // Get current block height to determine which consensus branch ID to use
+  const currentHeight = await getUtxoApi(Chain.Zcash).getBlockHeight();
+
+  // Network upgrade activation heights and consensus branch IDs
+  const NU5_BRANCH_ID = 0xc2d6d0b4; // Used before block 2726400
+  const NU6_HEIGHT = 2726400; // Activated Nov 23, 2024
+  const NU6_BRANCH_ID = 0xc8e71055;
+
+  // Select appropriate branch ID based on current block height
+  const branchId = currentHeight >= NU6_HEIGHT ? NU6_BRANCH_ID : NU5_BRANCH_ID;
 
   const CONSENSUS_BRANCH_ID_KEY = Buffer.concat([Buffer.of(0xfc), Buffer.of(0x05), Buffer.from("BITGO"), Buffer.of(0)]);
 
